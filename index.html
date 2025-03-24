@@ -191,9 +191,6 @@
     });
 
     myChart.on("click", {seriesIndex: 2}, function (params) {
-        const data = params.data;
-
-        console.log(data);
 
         // 设置信息框内容
         tooltip.innerHTML = "<strong>自定义文本</strong><br>";
@@ -339,6 +336,12 @@
 
         provinces["features"].push(provinceGeoJsons[provinceName]);
         option.geo.regions = []
+        myChart.setOption({
+            series: []
+        }, {
+            replaceMerge: ["series"],
+            notMerge: false
+        });
         option.series = [
             {
                 type: "lines",
@@ -380,12 +383,12 @@
 
             }
         ];
+        console.log(option.series);
 
         echarts.registerMap(mapName, provinces);
         option.geo.center = center;
         option.geo.zoom = zoom;
         myChart.setOption(option);
-
     }
 
     document.addEventListener("click", (e) => {
