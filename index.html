@@ -16,7 +16,7 @@
     const myChart = echarts.init(document.getElementById("map"));
 
     // 创建浮动信息框
-    const tooltip = document.createElement('div');
+    const tooltip = document.createElement("div");
     tooltip.style.cssText = `
         position: absolute;
         display: none;
@@ -166,20 +166,21 @@
         console.log("georoam")
 
         tooltip.style.display = "none";
+        modal.style.display = "none";
 
         const currentOption = myChart.getOption();
         const geoComponent = currentOption.geo[0];
 
         let center = geoComponent.center;
-        console.log('当前中心点:', center);
+        console.log("当前中心点:", center);
 
         let zoom = geoComponent.zoom;
-        console.log('当前缩放级别:', zoom);
+        console.log("当前缩放级别:", zoom);
 
-        if (!myChart.getModel().getComponent('geo').coordinateSystem.getRegionByCoord([center[0], center[1]])) {
+        if (!myChart.getModel().getComponent("geo").coordinateSystem.getRegionByCoord([center[0], center[1]])) {
             return;
         }
-        const provinceName = myChart.getModel().getComponent('geo').coordinateSystem.getRegionByCoord([center[0], center[1]]).name;
+        const provinceName = myChart.getModel().getComponent("geo").coordinateSystem.getRegionByCoord([center[0], center[1]]).name;
         console.log(provinceName);
 
         if (zoom >= 3) {
@@ -209,7 +210,7 @@
         myChart.setOption({
             series: [{
                 itemStyle: {
-                    color: params.dataIndex === 0 ? '#ffd700' : '#91cc75'
+                    color: params.dataIndex === 0 ? "#ffd700" : "#91cc75"
                 }
             }]
         });
@@ -279,15 +280,14 @@
             label: {
                 show: true,
                 position: "inside",
-                formatter: "{@[2]}", // 显示第三个数据值
+                formatter: "{@[2]}",
                 color: "#fea",
                 fontSize: 14,
-                fontWeight: 'bold'
+                fontWeight: "bold"
             },
-            // 数据格式: [经度, 纬度, 显示数值, 其他自定义数据...]
             data: [],
             emphasis: {
-                scale: 1.2, // 悬停放大
+                scale: 1.2,
                 label: {
                     show: true,
                     fontSize: 16
@@ -397,38 +397,37 @@
 
     const imageData = ["img1.png", "img2.png"];
 
-    const modal = document.createElement('div');
+    const modal = document.createElement("div");
     modal.style.cssText = `
-  position: absolute;
-  display: none;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  padding: 20px;
-  z-index: 1000;
-  max-width: 400px;
-`;
+        position: absolute;
+        display: none;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        padding: 20px;
+        z-index: 1000;
+        max-width: 400px;
+    `;
     myChart.getDom().appendChild(modal);
 
     // 模态框内容模板
     modal.innerHTML = `
-  <div class="modal-header">
-    <h3 style="margin:0 30px 0 0;"></h3>
-    <button class="close" style="position:absolute;top:10px;right:10px;">×</button>
-  </div>
-  <div class="image-container" style="position:relative;margin:15px 0;">
-    <img style="width:100%;height:200px;object-fit:cover;">
-    <div class="controls">
-      <button class="prev" style="position:absolute;left:0;top:50%;transform:translateY(-50%);">❮</button>
-      <button class="next" style="position:absolute;right:0;top:50%;transform:translateY(-50%);">❯</button>
+    <div class="modal-header">
+        <h3 style="margin:0 30px 0 0;"></h3>
+        <button class="close" style="position:absolute;top:10px;right:10px;">×</button>
     </div>
-  </div>
-`;
+    <div class="image-container" style="position:relative;margin:15px 0;">
+        <img style="width:100%;height:200px;object-fit:cover;">
+        <div class="controls">
+            <button class="prev" style="position:absolute;left:0;top:50%;transform:translateY(-50%);">❮</button>
+            <button class="next" style="position:absolute;right:0;top:50%;transform:translateY(-50%);">❯</button>
+        </div>
+    </div>`;
 
     // 全局状态管理
     let currentData = {
-        province: '',
+        province: "",
         images: [],
         index: 0
     };
@@ -452,33 +451,33 @@
     // 显示模态框
     function showModal(event) {
         // 1. 更新内容
-        modal.querySelector('h3').textContent = currentData.province;
-        modal.querySelector('img').src = currentData.images[currentData.index];
+        modal.querySelector("h3").textContent = currentData.province;
+        modal.querySelector("img").src = currentData.images[currentData.index];
 
         // 2. 定位计算
         const chartRect = myChart.getDom().getBoundingClientRect();
         const x = event.clientX - chartRect.left;
         const y = event.clientY - chartRect.top;
 
-        modal.style.left = Math.min(x + 20, chartRect.width - 420) + 'px';
-        modal.style.top = Math.min(y + 20, chartRect.height - 320) + 'px';
-        modal.style.display = 'block';
+        modal.style.left = Math.min(x + 20, chartRect.width - 420) + "px";
+        modal.style.top = Math.min(y + 20, chartRect.height - 320) + "px";
+        modal.style.display = "block";
     }
 
     // 图片切换控制
-    modal.querySelector('.next').addEventListener('click', () => {
+    modal.querySelector(".next").addEventListener("click", () => {
         currentData.index = (currentData.index + 1) % currentData.images.length;
-        modal.querySelector('img').src = currentData.images[currentData.index];
+        modal.querySelector("img").src = currentData.images[currentData.index];
     });
 
-    modal.querySelector('.prev').addEventListener('click', () => {
+    modal.querySelector(".prev").addEventListener("click", () => {
         currentData.index = (currentData.index - 1 + currentData.images.length) % currentData.images.length;
-        modal.querySelector('img').src = currentData.images[currentData.index];
+        modal.querySelector("img").src = currentData.images[currentData.index];
     });
 
     // 关闭功能
-    modal.querySelector('.close').addEventListener('click', () => {
-        modal.style.display = 'none';
+    modal.querySelector(".close").addEventListener("click", () => {
+        modal.style.display = "none";
     });
 </script>
 </body>
