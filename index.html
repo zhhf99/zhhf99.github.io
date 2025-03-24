@@ -3,45 +3,87 @@
 <head>
     <meta charset="utf-8">
     <title>中国地图</title>
-    <!-- 本地引入 ECharts -->
     <script src="echarts.js"></script>
     <script src="chinaMap.js"></script>
-    <!-- 本地引入中国地图数据 -->
+    <script src="shanDongMap.js"></script>
 </head>
 <body>
-<!-- 为 ECharts 准备一个定义了宽高的 DOM -->
-<div id="main" style="width: 100vw;height:100vh;"></div>
+<div id="main" style="width: 90vw;height:90vh;"></div>
 
 <script>
+    let currentMapName = 'China';
+    const myChart = echarts.init(document.getElementById('main'));
 
+    echarts.registerMap(currentMapName, chinaMap);
+    initChart(currentMapName);
 
-    echarts.registerMap("chinaMap", chinaMap);
-
-    const myChart = echarts.init(document.getElementById("main"));
-
-    const option = {
-        series: [{
-            type: "map",
-            map: "chinaMap", // 必须与registerMap的名称一致
-            roam: true,
-            label: {
-                show: true // 显示地区名称
-            },
-            itemStyle: {
-                areaColor: "#e9ecef" // 区域颜色
-            },
-            emphasis: { // 高亮状态
-                label: {
-                    color: "#fff"
-                },
-                itemStyle: {
-                    areaColor: "#4a90e2"
-                }
-            }
-        }]
+    const provinceMap = {
+        "山东省": shandongMap
     };
 
-    myChart.setOption(option);
+    myChart.on('dblclick', function (event) {
+        console.log(event);
+        if (event.name in provinceMap) {
+            loadProvinceMap(event.name);
+        }
+    });
+
+    myChart.on("georoam", function (event) {
+
+    });
+
+    function loadProvinceMap(provinceName) {
+
+        echarts.registerMap(provinceName, provinceMap[provinceName]);
+        currentMapName = provinceName;
+        initChart(provinceName, provinceName);
+    }
+
+    function initChart(mapName, title = '中国地图') {
+
+        const option = {
+            title: {
+                text: title,
+                left: 'center'
+            },
+
+            series: [{
+                type: "map",
+                map: mapName, // 必须与registerMap的名称一致
+                roam: true,
+                label: {
+                    show: true // 显示地区名称
+                },
+                itemStyle: {
+                    areaColor: "#e9ecef" // 区域颜色
+                },
+                emphasis: { // 高亮状态
+                    label: {
+                        color: "#fff"
+                    },
+                    itemStyle: {
+                        areaColor: "#4a90e2"
+                    }
+                }
+            }],
+            toolbox: {
+                feature: {
+                    myBack: {
+                        show: true,
+                        title: '返回全国',
+                        icon: 'path://M512 0L128 384l64 64 256-256v678.4h96V192l256 256 64-64z',
+                        onclick: () => {
+                            currentMapName = 'China';
+                            echarts.registerMap(currentMapName, chinaMap);
+                            initChart(currentMapName);
+                        }
+                    }
+                }
+            }
+        };
+
+        myChart.setOption(option);
+    }
 </script>
 </body>
 </html>
