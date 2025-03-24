@@ -18,6 +18,48 @@
     let mapName = "map";
     echarts.registerMap(mapName, provinces);
 
+    const staticLine = [
+        {
+            type: "lines",
+            coordinateSystem: "geo",
+            polyline: true,
+            lineStyle: {
+                color: "#e55",
+                width: 2,
+                opacity: 0.3,
+                type: "solid"
+            },
+            data: [{
+                coords: [
+                    [122.1919,50.2861],
+                    [110.4190,43.6039],
+                    [103.1298,34.9259],
+                    [98.2844,23.6573]
+                ]
+            }]
+        },
+        {
+            type: "lines",
+            coordinateSystem: "geo",
+            polyline: true,
+            lineStyle: {
+                color: "#e55",
+                width: 2,
+                opacity: 0.3,
+                type: "solid"
+            },
+            data: [{
+                coords: [
+                    [127.1919,50.2861],
+                    [120.4190,43.6039],
+                    [114.1298,34.9259],
+                    [108.2844,23.6573]
+                ]
+            }]
+
+        }
+    ]
+
     const option = {
         title: {
             text: "中国地图",
@@ -35,24 +77,7 @@
             regions: []
         },
 
-        series: [
-            {
-                type: "lines",
-                coordinateSystem: "geo", // 指定坐标系
-                polyline: true, // 多段线模式
-                lineStyle: {
-                    color: '#e55',
-                    width: 2,
-                    opacity: 0.8
-                },
-                data: [{
-                    coords: [
-                        [116.4074, 39.9042], // 北京坐标
-                        [121.4737, 31.2304]  // 上海坐标
-                    ]
-                }]
-            }
-        ],
+        series: staticLine,
 
         // toolbox: {
         //     feature: {
@@ -145,6 +170,8 @@
 
         if (zoom >= 3) {
             updateProvince(provinceName);
+        } else if (zoom <= 2.9) {
+            updateProvince(undefined)
         }
     });
 
