@@ -15,50 +15,22 @@
 
     const myChart = echarts.init(document.getElementById("map"));
 
+    // 创建浮动信息框
+    const tooltip = document.createElement('div');
+    tooltip.style.cssText = `
+        position: absolute;
+        display: none;
+        background: white;
+        border: 1px solid #ccc;
+        padding: 10px;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        pointer-events: none;
+        max-width: 300px;`;
+    myChart.getDom().appendChild(tooltip);
+
     let mapName = "map";
     echarts.registerMap(mapName, provinces);
-
-    const staticLine = [
-        {
-            type: "lines",
-            coordinateSystem: "geo",
-            polyline: true,
-            lineStyle: {
-                color: "#e55",
-                width: 2,
-                opacity: 0.3,
-                type: "solid"
-            },
-            data: [{
-                coords: [
-                    [122.1919,50.2861],
-                    [110.4190,43.6039],
-                    [103.1298,34.9259],
-                    [98.2844,23.6573]
-                ]
-            }]
-        },
-        {
-            type: "lines",
-            coordinateSystem: "geo",
-            polyline: true,
-            lineStyle: {
-                color: "#e55",
-                width: 2,
-                opacity: 0.3,
-                type: "solid"
-            },
-            data: [{
-                coords: [
-                    [127.1919,50.2861],
-                    [120.4190,43.6039],
-                    [114.1298,34.9259],
-                    [108.2844,23.6573]
-                ]
-            }]
-
-        }
-    ]
 
     const option = {
         title: {
@@ -77,8 +49,47 @@
             regions: []
         },
 
-        series: staticLine,
+        series: [
+            {
+                type: "lines",
+                coordinateSystem: "geo",
+                polyline: true,
+                lineStyle: {
+                    color: "#e55",
+                    width: 2,
+                    opacity: 0.3,
+                    type: "solid"
+                },
+                data: [{
+                    coords: [
+                        [122.1919, 50.2861],
+                        [110.4190, 43.6039],
+                        [103.1298, 34.9259],
+                        [98.2844, 23.6573]
+                    ]
+                }]
+            },
+            {
+                type: "lines",
+                coordinateSystem: "geo",
+                polyline: true,
+                lineStyle: {
+                    color: "#e55",
+                    width: 2,
+                    opacity: 0.3,
+                    type: "solid"
+                },
+                data: [{
+                    coords: [
+                        [127.1919, 50.2861],
+                        [120.4190, 43.6039],
+                        [114.1298, 34.9259],
+                        [108.2844, 23.6573]
+                    ]
+                }]
 
+            }
+        ],
         // toolbox: {
         //     feature: {
         //         myBack: {
@@ -153,6 +164,9 @@
 
     myChart.on("georoam", function (event) {
         console.log("georoam")
+
+        tooltip.style.display = "none";
+
         const currentOption = myChart.getOption();
         const geoComponent = currentOption.geo[0];
 
@@ -175,11 +189,32 @@
         }
     });
 
-    myChart.on("click", function (event) {
-        if (event.event.target.parent.type === "text") {
-        } else {
-        }
+    myChart.on("click", {seriesIndex: 2}, function (params) {
+        const data = params.data;
+
+        console.log(data);
+
+        // 设置信息框内容
+        tooltip.innerHTML = "<strong>自定义文本</strong><br>";
+
+        // 获取点击坐标
+        const [x, y] = [params.event.event.offsetX, params.event.event.offsetY];
+
+        // 定位信息框
+        tooltip.style.display = "block";
+        tooltip.style.left = `${x + 15}px`;
+        tooltip.style.top = `${y - tooltip.offsetHeight / 2}px`;
+
+        // 添加高亮效果
+        myChart.setOption({
+            series: [{
+                itemStyle: {
+                    color: params.dataIndex === 0 ? '#ffd700' : '#91cc75'
+                }
+            }]
+        });
     });
+
 
     function updateProvince(provinceName) {
         if (provinceName && !provinceNameToAdcode.hasOwnProperty(provinceName)) {
@@ -218,17 +253,64 @@
         for (let cityAdcode of provinceAdcodeToCityAdcodeSet[provinceAdcode]) {
             provinces["features"].push(cityGeoJsons[cityAdcode]);
             option.geo.regions.push({
-                name: cityGeoJsons[cityAdcode]["properties"]["name"], // 对应 GeoJSON properties 中的标识字段
+                name: cityGeoJsons[cityAdcode]["properties"]["name"],
                 itemStyle: {
-                    areaColor: "#6ff", // 红色边界
+                    areaColor: "#6ff",
                 },
-                emphasis: {         // 悬停效果
+                emphasis: {
                     itemStyle: {
                         areaColor: "#f66"
                     }
                 }
             })
         }
+
+        let scatter = {
+            type: "scatter",
+            coordinateSystem: "geo",
+            symbol: "circle",
+            symbolSize: 20,
+            itemStyle: {
+                borderColor: "#fea",
+                borderWidth: 2,
+                shadowBlur: 5,
+                shadowColor: "rgba(0, 0, 0, 0.3)"
+            },
+            label: {
+                show: true,
+                position: "inside",
+                formatter: "{@[2]}", // 显示第三个数据值
+                color: "#fea",
+                fontSize: 14,
+                fontWeight: 'bold'
+            },
+            // 数据格式: [经度, 纬度, 显示数值, 其他自定义数据...]
+            data: [],
+            emphasis: {
+                scale: 1.2, // 悬停放大
+                label: {
+                    show: true,
+                    fontSize: 16
+                }
+            }
+        }
+        let select = [];
+        let count = 5;
+        let copy = Array.from(provinceAdcodeToCityAdcodeSet[provinceAdcode]);
+        if (copy.length <= count) {
+            select = copy;
+        }
+        while (select.length < count && copy.length > 0) {
+            const randomIndex = Math.floor(Math.random() * select.length);
+            select.push(copy.splice(randomIndex, 1)[0]);
+        }
+        console.log(select)
+        for (let i in select) {
+            let temp = [...cityGeoJsons[select[i]]["properties"]["center"]];
+            temp.push(i - (-1));
+            scatter.data.push(temp);
+        }
+        option.series.push(scatter);
 
         echarts.registerMap(mapName, provinces);
         option.geo.center = center;
@@ -257,14 +339,147 @@
 
         provinces["features"].push(provinceGeoJsons[provinceName]);
         option.geo.regions = []
+        option.series = [
+            {
+                type: "lines",
+                coordinateSystem: "geo",
+                polyline: true,
+                lineStyle: {
+                    color: "#e55",
+                    width: 2,
+                    opacity: 0.3,
+                    type: "solid"
+                },
+                data: [{
+                    coords: [
+                        [122.1919, 50.2861],
+                        [110.4190, 43.6039],
+                        [103.1298, 34.9259],
+                        [98.2844, 23.6573]
+                    ]
+                }]
+            },
+            {
+                type: "lines",
+                coordinateSystem: "geo",
+                polyline: true,
+                lineStyle: {
+                    color: "#e55",
+                    width: 2,
+                    opacity: 0.3,
+                    type: "solid"
+                },
+                data: [{
+                    coords: [
+                        [127.1919, 50.2861],
+                        [120.4190, 43.6039],
+                        [114.1298, 34.9259],
+                        [108.2844, 23.6573]
+                    ]
+                }]
+
+            }
+        ];
 
         echarts.registerMap(mapName, provinces);
         option.geo.center = center;
         option.geo.zoom = zoom;
         myChart.setOption(option);
 
-
     }
+
+    document.addEventListener("click", (e) => {
+        if (!myChart.getDom().contains(e.target)) {
+            tooltip.style.display = "none";
+        }
+    });
+
+
+    const imageData = ["img1.png", "img2.png"];
+
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+  position: absolute;
+  display: none;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 20px;
+  z-index: 1000;
+  max-width: 400px;
+`;
+    myChart.getDom().appendChild(modal);
+
+    // 模态框内容模板
+    modal.innerHTML = `
+  <div class="modal-header">
+    <h3 style="margin:0 30px 0 0;"></h3>
+    <button class="close" style="position:absolute;top:10px;right:10px;">×</button>
+  </div>
+  <div class="image-container" style="position:relative;margin:15px 0;">
+    <img style="width:100%;height:200px;object-fit:cover;">
+    <div class="controls">
+      <button class="prev" style="position:absolute;left:0;top:50%;transform:translateY(-50%);">❮</button>
+      <button class="next" style="position:absolute;right:0;top:50%;transform:translateY(-50%);">❯</button>
+    </div>
+  </div>
+`;
+
+    // 全局状态管理
+    let currentData = {
+        province: '',
+        images: [],
+        index: 0
+    };
+
+    // 事件监听
+    myChart.on("click", "geo", (params) => {
+        if (provinceNameToAdcode.hasOwnProperty(params.name)) {
+            return;
+        }
+        const province = params.name;
+
+        currentData = {
+            province,
+            images: imageData,
+            index: 0
+        };
+
+        showModal(params.event.event);
+    });
+
+    // 显示模态框
+    function showModal(event) {
+        // 1. 更新内容
+        modal.querySelector('h3').textContent = currentData.province;
+        modal.querySelector('img').src = currentData.images[currentData.index];
+
+        // 2. 定位计算
+        const chartRect = myChart.getDom().getBoundingClientRect();
+        const x = event.clientX - chartRect.left;
+        const y = event.clientY - chartRect.top;
+
+        modal.style.left = Math.min(x + 20, chartRect.width - 420) + 'px';
+        modal.style.top = Math.min(y + 20, chartRect.height - 320) + 'px';
+        modal.style.display = 'block';
+    }
+
+    // 图片切换控制
+    modal.querySelector('.next').addEventListener('click', () => {
+        currentData.index = (currentData.index + 1) % currentData.images.length;
+        modal.querySelector('img').src = currentData.images[currentData.index];
+    });
+
+    modal.querySelector('.prev').addEventListener('click', () => {
+        currentData.index = (currentData.index - 1 + currentData.images.length) % currentData.images.length;
+        modal.querySelector('img').src = currentData.images[currentData.index];
+    });
+
+    // 关闭功能
+    modal.querySelector('.close').addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
 </script>
 </body>
 </html>
