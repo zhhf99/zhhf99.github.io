@@ -1,88 +1,242 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
     <meta charset="utf-8">
     <title>中国地图</title>
     <script src="echarts.js"></script>
-    <script src="chinaMap.js"></script>
-    <script src="shanDongMap.js"></script>
+    <script src="provinces.js"></script>
+    <script src="cities.js"></script>
 </head>
 <body>
-<div id="main" style="width: 90vw;height:90vh;"></div>
+<div id="map" style="width: 99dvw;height:98dvh;"></div>
 
 <script>
-    let currentMapName = 'China';
-    const myChart = echarts.init(document.getElementById('main'));
+    let hidedProvinceName;
 
-    echarts.registerMap(currentMapName, chinaMap);
-    initChart(currentMapName);
+    const myChart = echarts.init(document.getElementById("map"));
 
-    const provinceMap = {
-        "山东省": shandongMap
+    let mapName = "map";
+    echarts.registerMap(mapName, provinces);
+
+    const option = {
+        title: {
+            text: "中国地图",
+            left: "center"
+        },
+
+        geo: {
+            map: mapName,
+            roam: true,
+            label: {
+                show: true
+            },
+            center: [116.4074, 39.9042],
+            zoom: 2,
+            regions: []
+        },
+
+        series: [
+            {
+                type: "lines",
+                coordinateSystem: "geo", // 指定坐标系
+                polyline: true, // 多段线模式
+                lineStyle: {
+                    color: '#e55',
+                    width: 2,
+                    opacity: 0.8
+                },
+                data: [{
+                    coords: [
+                        [116.4074, 39.9042], // 北京坐标
+                        [121.4737, 31.2304]  // 上海坐标
+                    ]
+                }]
+            }
+        ],
+
+        // toolbox: {
+        //     feature: {
+        //         myBack: {
+        //             show: true,
+        //             title: "返回全国",
+        //             icon: "path://M512 0L128 384l64 64 256-256v678.4h96V192l256 256 64-64z",
+        //             onclick: () => {
+        //                 echarts.registerMap(mapName, provinces);
+        //                 displayChart(mapName);
+        //             }
+        //         }
+        //     }
+        // },
+        animation: false
     };
+    myChart.setOption(option);
 
-    myChart.on('dblclick', function (event) {
-        console.log(event);
-        if (event.name in provinceMap) {
-            loadProvinceMap(event.name);
+    const cityGeoJsons = {}
+    const provinceAdcodeToCityAdcodeSet = {};
+    for (let cityGeoJson of cities["features"]) {
+        let cityAdcode = cityGeoJson["properties"]["adcode"]
+        let provinceAdcode = cityGeoJson["properties"]["parent"]["adcode"]
+        cityGeoJsons[cityAdcode] = cityGeoJson;
+
+        if (provinceAdcodeToCityAdcodeSet.hasOwnProperty(provinceAdcode)) {
+            provinceAdcodeToCityAdcodeSet[provinceAdcode].add(cityAdcode);
+        } else {
+            provinceAdcodeToCityAdcodeSet[provinceAdcode] = new Set([cityAdcode]);
         }
+    }
+
+    const provinceGeoJsons = {}
+    const provinceNameToAdcode = {}
+    for (let provinceGeoJson of provinces["features"]) {
+        let provinceName = provinceGeoJson["properties"]["name"]
+        let provinceAdcode = provinceGeoJson["properties"]["adcode"]
+        provinceGeoJsons[provinceName] = provinceGeoJson;
+        provinceNameToAdcode[provinceName] = provinceAdcode;
+    }
+
+    myChart.on("dblclick", function (event) {
+        console.log("double click");
+        const provinceName = event.name;
+
+        if (!provinceName) {
+            return;
+        }
+
+        const animationDuration = 800;
+
+        myChart.setOption({
+            animation: true,
+            animationDurationUpdate: animationDuration,
+            animationEasingUpdate: "cubicInOut",
+            geo: {
+                center: provinceGeoJsons[provinceName]["properties"]["center"],
+                zoom: 5,
+                roam: false
+            }
+        });
+        setTimeout(() => {
+            myChart.setOption({
+                geo: {
+                    roam: true
+                },
+                animation: false,
+            });
+            updateProvince(provinceName);
+        }, animationDuration)
+
     });
 
     myChart.on("georoam", function (event) {
+        console.log("georoam")
+        const currentOption = myChart.getOption();
+        const geoComponent = currentOption.geo[0];
 
+        let center = geoComponent.center;
+        console.log('当前中心点:', center);
+
+        let zoom = geoComponent.zoom;
+        console.log('当前缩放级别:', zoom);
+
+        if (!myChart.getModel().getComponent('geo').coordinateSystem.getRegionByCoord([center[0], center[1]])) {
+            return;
+        }
+        const provinceName = myChart.getModel().getComponent('geo').coordinateSystem.getRegionByCoord([center[0], center[1]]).name;
+        console.log(provinceName);
+
+        if (zoom >= 3) {
+            updateProvince(provinceName);
+        }
     });
 
-    function loadProvinceMap(provinceName) {
+    myChart.on("click", function (event) {
+        if (event.event.target.parent.type === "text") {
+        } else {
+        }
+    });
 
-        echarts.registerMap(provinceName, provinceMap[provinceName]);
-        currentMapName = provinceName;
-        initChart(provinceName, provinceName);
+    function updateProvince(provinceName) {
+        if (provinceName && !provinceNameToAdcode.hasOwnProperty(provinceName)) {
+            return;
+        }
+
+        if (!hidedProvinceName && provinceName) {
+            hidedProvinceName = provinceName;
+            hideProvince(hidedProvinceName);
+        } else if (hidedProvinceName && !provinceName) {
+            displayProvince(hidedProvinceName);
+            hidedProvinceName = provinceName;
+        } else if (hidedProvinceName !== provinceName) {
+            displayProvince(hidedProvinceName);
+            hidedProvinceName = provinceName;
+            hideProvince(hidedProvinceName);
+        }
     }
 
-    function initChart(mapName, title = '中国地图') {
+    function hideProvince(provinceName) {
+        if (!provinceNameToAdcode.hasOwnProperty(provinceName)) {
+            return;
+        }
 
-        const option = {
-            title: {
-                text: title,
-                left: 'center'
-            },
+        let center = myChart.getOption().geo[0].center;
+        let zoom = myChart.getOption().geo[0].zoom;
 
-            series: [{
-                type: "map",
-                map: mapName, // 必须与registerMap的名称一致
-                roam: true,
-                label: {
-                    show: true // 显示地区名称
-                },
+        for (let i in provinces["features"]) {
+            if (provinces["features"][i]["properties"]["name"] === provinceName) {
+                provinces["features"].splice(i, 1);
+                break;
+            }
+        }
+
+        let provinceAdcode = provinceNameToAdcode[provinceName];
+        for (let cityAdcode of provinceAdcodeToCityAdcodeSet[provinceAdcode]) {
+            provinces["features"].push(cityGeoJsons[cityAdcode]);
+            option.geo.regions.push({
+                name: cityGeoJsons[cityAdcode]["properties"]["name"], // 对应 GeoJSON properties 中的标识字段
                 itemStyle: {
-                    areaColor: "#e9ecef" // 区域颜色
+                    areaColor: "#6ff", // 红色边界
                 },
-                emphasis: { // 高亮状态
-                    label: {
-                        color: "#fff"
-                    },
+                emphasis: {         // 悬停效果
                     itemStyle: {
-                        areaColor: "#4a90e2"
+                        areaColor: "#f66"
                     }
                 }
-            }],
-            toolbox: {
-                feature: {
-                    myBack: {
-                        show: true,
-                        title: '返回全国',
-                        icon: 'path://M512 0L128 384l64 64 256-256v678.4h96V192l256 256 64-64z',
-                        onclick: () => {
-                            currentMapName = 'China';
-                            echarts.registerMap(currentMapName, chinaMap);
-                            initChart(currentMapName);
-                        }
-                    }
+            })
+        }
+
+        echarts.registerMap(mapName, provinces);
+        option.geo.center = center;
+        option.geo.zoom = zoom;
+        myChart.setOption(option);
+    }
+
+    function displayProvince(provinceName) {
+        if (!provinceNameToAdcode.hasOwnProperty(provinceName)) {
+            return;
+        }
+
+        let center = myChart.getOption().geo[0].center;
+        let zoom = myChart.getOption().geo[0].zoom;
+
+        let provinceAdcode = provinceNameToAdcode[provinceName];
+        for (let cityAdcode of provinceAdcodeToCityAdcodeSet[provinceAdcode]) {
+            for (let i in provinces["features"]) {
+                if (provinces["features"][i]["properties"]["adcode"] === cityAdcode) {
+                    provinces["features"].splice(i, 1);
+                    break;
                 }
             }
-        };
 
+        }
+
+        provinces["features"].push(provinceGeoJsons[provinceName]);
+        option.geo.regions = []
+
+        echarts.registerMap(mapName, provinces);
+        option.geo.center = center;
+        option.geo.zoom = zoom;
         myChart.setOption(option);
+
+
     }
 </script>
 </body>
