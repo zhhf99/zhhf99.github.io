@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>中国地图</title>
+    <!-- 本地引入 ECharts -->
+    <script src="echarts.js"></script>
+    <script src="chinaMap.js"></script>
+    <!-- 本地引入中国地图数据 -->
+</head>
+<body>
+<!-- 为 ECharts 准备一个定义了宽高的 DOM -->
+<div id="main" style="width: 100vw;height:100vh;"></div>
+
+<script>
+
+
+    echarts.registerMap("chinaMap", chinaMap);
+
+    const myChart = echarts.init(document.getElementById("main"));
+
+    const option = {
+        series: [{
+            type: "map",
+            map: "chinaMap", // 必须与registerMap的名称一致
+            roam: true,
+            label: {
+                show: true // 显示地区名称
+            },
+            itemStyle: {
+                areaColor: "#e9ecef" // 区域颜色
+            },
+            emphasis: { // 高亮状态
+                label: {
+                    color: "#fff"
+                },
+                itemStyle: {
+                    areaColor: "#4a90e2"
+                }
+            }
+        }]
+    };
+
+    myChart.setOption(option);
+</script>
+</body>
+</html>
